@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+build/
+.cache/
+.temp/
+coverage/
+npm-debug.log*
+
+# Env & local
+.env
+.env.local
+.env.*.local
+
+# OS/editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# React/TS artifacts
+web/.vite/
+server/tsconfig.tsbuildinfo
