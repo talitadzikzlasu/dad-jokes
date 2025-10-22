@@ -1,0 +1,27 @@
+.wrap {
+    position: relative;
+    width: 568.71px;
+    height: 108px;
+  }
+  
+  .wave {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .fab {
+    position: absolute;
+    top: var(--btn-top, 50%); 
+    left: var(--btn-left, 50%);
+    transform: translate(-50%, -50%);
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    background: var(--card-background-color);
+
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+  }
