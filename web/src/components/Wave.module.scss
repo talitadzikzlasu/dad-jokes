@@ -1,0 +1,13 @@
+.wave {
+  width: 568.71px;
+  height: 108px;
+  display: block;
+}
+
+.path {
+  fill: none;
+  stroke: var(--wave);
+  stroke-width: 5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

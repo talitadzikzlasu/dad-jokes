@@ -1,13 +1,21 @@
 @use 'colors' as *;
 
+
+
 :root {
   /* default = light */
-  --background-color: #{$seashell};
+  --background-color: #{$misty-rose};
   --color: #{$black-1};
   --primary-color: #{$blue-1};
   --secondary-color: #{$grey-3};
-  --card-background-color: #{$white-1};
-  --card-border-color: #{$grey-2};
+  --card-background-color: #{$seashell};
+  --card-border-color: #{$cardinal};
+  --main-text-color: #{$cardinal};
+
+  --wave: #{$cherry-blossom};
+
+  --radius: 16px;
+  --gap: 24px;
 }
 
 /* auto-dark */
@@ -24,12 +32,12 @@
 
 /* manual override */
 html[data-theme="light"] {
-  --background-color: #{$seashell};
-  --color: #{$black-1};
-  --primary-color: #{$blue-1};
-  --secondary-color: #{$grey-3};
-  --card-background-color: #{$white-1};
-  --card-border-color: #{$grey-2};
+    --background-color: #{$misty-rose};
+    --color: #{$black-1};
+    --primary-color: #{$blue-1};
+    --secondary-color: #{$grey-3};
+    --card-background-color: #{$seashell};
+    --card-border-color: #{$cardinal};
 }
 
 html[data-theme="dark"] {
