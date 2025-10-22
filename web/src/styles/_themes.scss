@@ -1,0 +1,42 @@
+@use 'colors' as *;
+
+:root {
+  /* default = light */
+  --background-color: #{$seashell};
+  --color: #{$black-1};
+  --primary-color: #{$blue-1};
+  --secondary-color: #{$grey-3};
+  --card-background-color: #{$white-1};
+  --card-border-color: #{$grey-2};
+}
+
+/* auto-dark */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background-color: #{$neutral-900};
+    --color: #{$neutral-0};
+    --primary-color: #{$primary-500};
+    --secondary-color: #{$neutral-500};
+    --card-background-color: #{$dark-overlay-8};
+    --card-border-color: #{$neutral-700};
+  }
+}
+
+/* manual override */
+html[data-theme="light"] {
+  --background-color: #{$seashell};
+  --color: #{$black-1};
+  --primary-color: #{$blue-1};
+  --secondary-color: #{$grey-3};
+  --card-background-color: #{$white-1};
+  --card-border-color: #{$grey-2};
+}
+
+html[data-theme="dark"] {
+  --background-color: #{$neutral-900};
+  --color: #{$neutral-0};
+  --primary-color: #{$primary-500};
+  --secondary-color: #{$neutral-500};
+  --card-background-color: #{$dark-overlay-8};
+  --card-border-color: #{$neutral-700};
+}

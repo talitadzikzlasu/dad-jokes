@@ -1,0 +1,33 @@
+/* Base Colors */
+$space-cadet:       #363648; // deep ink
+$seashell:          #FFF1EE; // soft paper
+$misty-rose:        #FFDFDE; // light blush
+$cherry-blossom:    #F8ACB9; // pink UI fills
+$cardinal:          #B43A40; // accent / primary
+$snow:              #FFF4F3; // surface
+$columbia-blue:     #C7E6F2; // secondary tint
+$cinnabar:          #E64A1D; // warn / highlight
+$sky-blue:          #9CCFE4; // secondary hover/depth
+
+$black-1: #000;
+
+/* Dark Theme Colors */
+
+/* Neutrals */
+$neutral-0:   #FFFFFF;
+$neutral-500: #949497; // mid grey (simple utility)
+$neutral-700: #4B4B5A; // ink-muted
+$neutral-900: $space-cadet;
+
+/* imple extras you referenced */
+$black-1:     #232323;
+$white-1:     #FFFFFF;
+$grey-2:      #B4B4B7;
+$grey-3:      #949497; // alias of neutral-500
+$blue-1:      #9CCFE4; // use palette “sky”
+
+/* --- Primary scale hook --- */
+$primary-500: $cardinal;
+
+/* --- Overlay used for cards in dark --- */
+$dark-overlay-8: rgba($neutral-0, 0.08); // subtle light overlay on dark
