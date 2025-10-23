@@ -2,63 +2,80 @@
 const express = require('express');
 const router = express.Router();
 
-// Node 18+ has global fetch and URL.
-// If you're on Node <18, install node-fetch@2 and uncomment:
-// const fetch = require("node-fetch") as typeof import("node-fetch");
 
-router.get('/search', async (req: any, res: any) => {
+
+// GET /api/jokes/search-multi?kw=word1,word2&limit=20
+router.get('/search-multi', async (req: any, res: any) => {
   try {
-    const term = String(req.query.term || '');
+    const kw = String(req.query.kw || '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 5);
     const limit = Number(req.query.limit || 20);
-    const page = Number(req.query.page || 1);
 
-    const url = new URL('https://icanhazdadjoke.com/search');
-    if (term) url.searchParams.set('term', term);
-    url.searchParams.set('limit', String(limit));
-    url.searchParams.set('page', String(page));
+    if (kw.length === 0) return res.json({ results: [] });
 
-    const r = await fetch(url as unknown as string, {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': process.env.USER_AGENT || 'GoodTape DadJokes Demo',
-      },
-    });
+    const headers = {
+      Accept: 'application/json',
+      'User-Agent': process.env.USER_AGENT || 'DadJokes Demo',
+    };
 
-    if (!r.ok) return res.status(502).json({ error: 'icanhaz error' });
+    const build = (term: string) => {
+      const u = new URL('https://icanhazdadjoke.com/search');
+      u.searchParams.set('term', term);
+      u.searchParams.set('limit', String(limit));
+      return u;
+    };
 
-    const data = (await r.json()) as any;
-    const results = (data.results || []).map((j: any) => ({
+    // combined
+    const r1 = await fetch(build(kw.join(' ')), { headers });
+    const t1 = await r1.text();
+    const d1 = r1.ok ? JSON.parse(t1) : { results: [] };
+    const combined = (d1.results || []).map((j: any) => ({
       id: j.id,
       joke: j.joke,
-      length: j.joke ? j.joke.length : 0,
+      length: (j.joke || '').length,
     }));
 
-    res.json({
-      results,
-      total: data.total_jokes ?? results.length,
-      page: data.current_page ?? page,
-      pages: data.total_pages ?? 1,
-    });
+    // per-keyword
+    const per = await Promise.all(
+      kw.map(async (w) => {
+        const rr = await fetch(build(w), { headers });
+        const tt = await rr.text();
+        if (!rr.ok) return [];
+        const dd = JSON.parse(tt);
+        return (dd.results || []).map((j: any) => ({
+          id: j.id,
+          joke: j.joke,
+          length: (j.joke || '').length,
+        }));
+      })
+    );
+
+    // merge + score
+    const byId = new Map<string, { id: string; joke: string; length: number; score: number }>();
+    const scoreIt = (arr: any[], weight = 1) => {
+      for (const j of arr) {
+        const lower = j.joke.toLowerCase();
+        const matches = kw.reduce((n, w) => n + (lower.includes(w) ? 1 : 0), 0);
+        const prev = byId.get(j.id);
+        const score = matches + weight;
+        if (!prev || score > prev.score) byId.set(j.id, { ...j, score });
+      }
+    };
+    scoreIt(combined, 1.5);
+    per.forEach((set) => scoreIt(set, 1));
+
+    const results = [...byId.values()]
+      .sort((a, b) => b.score - a.score || a.length - b.length || a.id.localeCompare(b.id))
+      .slice(0, limit)
+      .map(({ id, joke, length }) => ({ id, joke, length }));
+
+    res.json({ results });
   } catch (e: any) {
-    res.status(500).json({ error: 'search failed', details: e?.message });
-  }
-});
-
-router.get('/random', async (_req: any, res: any) => {
-  try {
-    const r = await fetch('https://icanhazdadjoke.com/', {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': process.env.USER_AGENT || 'GoodTape DadJokes Demo',
-      },
-    });
-
-    if (!r.ok) return res.status(502).json({ error: 'icanhaz error' });
-
-    const data = (await r.json()) as any;
-    res.json({ id: data.id, joke: data.joke, length: data.joke ? data.joke.length : 0 });
-  } catch (e: any) {
-    res.status(500).json({ error: 'random failed', details: e?.message });
+    console.error('search-multi failed:', e);
+    res.status(500).json({ error: 'search-multi failed', details: e?.message });
   }
 });
 

@@ -4,34 +4,38 @@ import RecordSection from './components/RecordSection';
 import { ACTION, ACTION_LABELS } from './constants/wave.constants';
 import type { ActionState } from './types/waves';
 import { useRecorder } from './hooks/useRecorder';
-import { transcribeAudio } from './lib/api';
-
-// const DEFAULT_JOKE = 'Did you hear about the Italian chef that died? He pasta way.';
+import { searchJokesMulti, transcribeAudio } from './lib/api';
+import { filterCommonWords, topKeywordsCompromise } from './lib/keywords';
 
 export default function App() {
-  const [action] = useState<ActionState>(ACTION.WAITING);
-  // const [animate, setAnimate] = useState<boolean>(false);
-  const [joke] = useState<string>('');
-
-  // const handleRecordCLick = () => {
-  //   setAnimate((prev) => !prev);
-  //   setJoke(DEFAULT_JOKE);
-  // };
+  const [action, setAction] = useState<ActionState>(ACTION.WAITING);
+  const [animate, setAnimate] = useState<boolean>(false);
+  const [joke, setJoke] = useState<string>('');
 
   const { recording, start, stop } = useRecorder();
   const [busy, setBusy] = useState(false);
 
   async function handlePress() {
-    console.log('jfjgagkgr');
     console.log('recording', recording);
     try {
       if (!recording) {
         await start();
+        setAnimate(true);
+        setAction(ACTION.RECORDING);
       } else {
         setBusy(true);
+        setAnimate(false);
         const { blob, mime } = await stop();
+        setAction(ACTION.TRANSCRIBING);
         const text = await transcribeAudio(blob, mime || 'audio/webm');
         if (text) {
+          setAction(ACTION.LOADING);
+          const keywords = topKeywordsCompromise(text);
+          const clean = filterCommonWords(keywords, ['good', 'tape']);
+          const joke = await searchJokesMulti(clean);
+          setAction(ACTION.READY);
+          setJoke(joke[0].joke);
+          console.log('key', joke);
           console.log(text);
         }
       }
@@ -55,7 +59,13 @@ export default function App() {
         <div className={styles.title}>Voice-Activated Dad Joke Search Engine</div>
         <div className={styles.subtitle}>Press the button and ask for a joke!</div>
         <div className={styles.recordSection}>
-          <RecordSection animate={busy} onClick={handlePress} />
+          <RecordSection
+            recording={action === ACTION.RECORDING}
+            busy={action !== ACTION.READY && action !== ACTION.WAITING}
+            animate={animate}
+            onClick={handlePress}
+            disabled={busy}
+          />
         </div>
 
         <div className={styles.action}>
