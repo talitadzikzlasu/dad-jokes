@@ -1,45 +1,104 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { randomUUID } = require('crypto');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static'); // binarka ffmpeg
+ffmpeg.setFfmpegPath(ffmpegPath);
 
-const GOODTAPE_KEY = process.env.GOODTAPE_API_KEY;
+const GOODTAPE_KEY = process.env.GOODTAPE_API_KEY!;
+const API_BASE = process.env.GOODTAPE_API_BASE || 'https://api.goodtape.io';
 
-// Accept raw audio for this endpoint only
+// utils
+function writeTmpFile(buf: Buffer, ext: string) {
+  const p = path.join(os.tmpdir(), `gt-${randomUUID()}.${ext}`);
+  fs.writeFileSync(p, buf);
+  return p;
+}
+function toWav(inputPath: string): Promise<string> {
+  const outPath = inputPath.replace(/\.[^.]+$/, '.wav');
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .audioCodec('pcm_s16le')
+      .format('wav')
+      .on('error', reject)
+      .on('end', () => resolve(outPath))
+      .save(outPath);
+  });
+}
+function pickExt(ct: string) {
+  if (!ct) return 'bin';
+  if (ct.includes('webm')) return 'webm';
+  if (ct.includes('ogg')) return 'ogg';
+  if (ct.includes('wav') || ct.includes('x-wav')) return 'wav';
+  if (ct.includes('mpeg')) return 'mp3';
+  if (ct.includes('mp4') || ct.includes('m4a') || ct.includes('aac')) return 'm4a';
+  return 'bin';
+}
+
 router.post('/', express.raw({ type: '*/*', limit: '25mb' }), async (req: any, res: any) => {
   try {
     if (!GOODTAPE_KEY) return res.status(500).json({ error: 'Missing Good Tape key' });
-
-    // TODO: replace with the real Good Tape endpoint from your docs
-    const url = 'https://api.goodtape.example/transcribe';
-    const contentType = (req.headers['content-type'] as string) || 'application/octet-stream';
     const buf: Buffer = req.body;
     if (!buf?.length) return res.status(400).json({ error: 'No audio body' });
-    const ab = buf.buffer.slice(buf.byteOffset, buf.byteLength + buf.byteOffset);
-    // turn Node Buffer -> ArrayBuffer (exact slice), then -> Blob
-    const body = new Blob([ab as any], { type: contentType });
 
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${GOODTAPE_KEY}`,
-        'Content-Type': contentType,
-      } as Record<string, string>,
-      body, // Blob is a valid BodyInit
-    });
+    const contentType = (req.headers['content-type'] as string) || 'application/octet-stream';
+    const inExt = pickExt(contentType);
+    const inPath = writeTmpFile(buf, inExt);
 
-    if (!r.ok) {
-      const msg = await r.text().catch(() => '');
-      return res.status(502).json({ error: 'Transcription failed', details: msg });
+    async function postSync(filePath: string, mime = 'audio/wav') {
+      const fd = new FormData();
+      const blob = new Blob([fs.readFileSync(filePath)], { type: mime });
+      fd.append('audio', blob, path.basename(filePath));
+
+      const r = await fetch(`${API_BASE}/transcribe/sync`, {
+        method: 'POST',
+        headers: { Authorization: `${GOODTAPE_KEY}` } as Record<string, string>,
+        body: fd as any,
+      });
+      const text = await r.text();
+      return { ok: r.ok, status: r.status, text };
     }
 
-    const data = (await r.json()) as any;
-    res.json({ text: (data.text || '').trim() });
+    let attempt = await postSync(inPath, contentType.includes('wav') ? 'audio/wav' : contentType);
+
+    if (
+      !attempt.ok &&
+      /invalid audio|unsupported|415|bad request/i.test(attempt.text + ' ' + attempt.status)
+    ) {
+      const wavPath = inExt === 'wav' ? inPath : await toWav(inPath);
+      attempt = await postSync(wavPath, 'audio/wav');
+      try {
+        if (wavPath !== inPath) fs.unlinkSync(wavPath);
+      } catch {}
+    }
+
+    try {
+      fs.unlinkSync(inPath);
+    } catch {}
+
+    if (!attempt.ok) {
+      return res
+        .status(502)
+        .json({ error: 'Transcription failed', details: attempt.text, status: attempt.status });
+    }
+
+    let payload: any = null;
+    try {
+      payload = JSON.parse(attempt.text);
+    } catch {
+      payload = { raw: attempt.text };
+    }
+
+    const text = payload?.text || payload?.transcription?.text || payload?.results?.[0]?.text || '';
+
+    return res.json({ text: (text || '').trim(), raw: payload }); // możesz raw usunąć po testach
   } catch (e: any) {
-    res.status(500).json({ error: 'transcribe failed', details: e?.message });
+    return res.status(500).json({ error: 'transcribe failed', details: e?.message });
   }
 });
-
-// If you add more handlers later here, re-enable JSON:
-// router.use(express.json());
 
 export = router;
