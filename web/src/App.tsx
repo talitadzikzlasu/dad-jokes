@@ -102,7 +102,7 @@ export default function App() {
           <RecordSection
             recording={action === ACTION.RECORDING}
             busy={action !== ACTION.READY && action !== ACTION.WAITING}
-            animate={animate}
+            animate={animate && action !== ACTION.AGAIN}
             onClick={handlePress}
             disabled={busy}
           />
