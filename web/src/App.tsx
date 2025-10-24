@@ -10,10 +10,46 @@ import { filterCommonWords, topKeywordsCompromise } from './lib/keywords';
 export default function App() {
   const [action, setAction] = useState<ActionState>(ACTION.WAITING);
   const [animate, setAnimate] = useState<boolean>(false);
-  const [joke, setJoke] = useState<string>('');
+  const [jokes, setJokes] = useState<{ id: string; joke: string; length: number }[]>([]);
+  const [joke, setJoke] = useState<{ id: string; joke: string; length: number }>();
 
   const { recording, start, stop } = useRecorder();
   const [busy, setBusy] = useState(false);
+
+  function handleChangeJoke() {
+    if (!jokes || jokes.length === 0 || !joke) {
+      return;
+    }
+
+    const currentIndex = jokes.findIndex((j) => j.id === joke.id);
+
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % jokes.length;
+
+    const next = jokes[nextIndex];
+
+    setJoke(next);
+  }
+
+  function pickFirstDifferent(
+    newList: { id: string; joke: string; length: number }[],
+    prev?: { id: string; joke: string; length: number }
+  ) {
+    if (!newList || newList.length === 0) {
+      return undefined;
+    }
+
+    if (!prev) {
+      return newList[0];
+    }
+
+    const different = newList.find((j) => j.id !== prev.id);
+
+    if (different) {
+      return different;
+    }
+
+    return newList[0];
+  }
 
   async function handlePress() {
     console.log('recording', recording);
@@ -32,9 +68,11 @@ export default function App() {
           setAction(ACTION.LOADING);
           const keywords = topKeywordsCompromise(text);
           const clean = filterCommonWords(keywords, ['good', 'tape']);
-          const joke = await searchJokesMulti(clean);
+          const jokes = await searchJokesMulti(clean);
           setAction(ACTION.READY);
-          setJoke(joke[0].joke);
+          setJokes(jokes);
+          const nextJoke = pickFirstDifferent(jokes, joke);
+          setJoke(nextJoke);
           console.log('key', joke);
         } else {
           setAction(ACTION.AGAIN);
@@ -76,7 +114,8 @@ export default function App() {
       </div>
       {joke && (
         <div className={styles.cards}>
-          <div className={styles.jokeCard}>{joke}</div>
+          <div className={styles.jokeCard}>{joke.joke}</div>
+          {jokes.length > 1 && <button onClick={handleChangeJoke}> give me a different one</button>}
         </div>
       )}
     </div>
