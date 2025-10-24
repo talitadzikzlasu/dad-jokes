@@ -36,7 +36,9 @@ export default function App() {
           setAction(ACTION.READY);
           setJoke(joke[0].joke);
           console.log('key', joke);
-          console.log(text);
+        } else {
+          setAction(ACTION.AGAIN);
+          setBusy(false);
         }
       }
     } catch (e: unknown) {

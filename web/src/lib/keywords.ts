@@ -18,10 +18,12 @@ export function topKeywordsCompromise(text: string, min = 3, max = 5): string[] 
   const uniqNPs = dedupe(nounPhrases).filter(validToken);
 
   // 2) head nouns (lemmas) as fallback
+  // @ts-ignore
   const nouns = doc.nouns().out('lemma').toLowerCase().split(/\s+/).filter(Boolean);
   const uniqNouns = dedupe(nouns).filter((w) => w.length > 1);
 
   // 3) verbs + adjectives to backfill if needed
+  // @ts-ignore
   const verbs = doc.verbs().out('lemma').toLowerCase().split(/\s+/).filter(Boolean);
   const adjs = doc.adjectives().out('normal').toLowerCase().split(/\s+/).filter(Boolean);
   const content = dedupe([...verbs, ...adjs]).filter((w) => w.length > 2);

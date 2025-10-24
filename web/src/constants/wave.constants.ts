@@ -5,6 +5,7 @@ export const ACTION = {
   ERROR: 'error',
   READY: 'ready',
   RECORDING: 'recording',
+  AGAIN: 'again',
 } as const;
 
 export const ACTION_LABELS = {
@@ -14,4 +15,5 @@ export const ACTION_LABELS = {
   error: 'Something went wrong',
   ready: '',
   recording: 'recording',
+  again: 'Please record again.',
 } as const;

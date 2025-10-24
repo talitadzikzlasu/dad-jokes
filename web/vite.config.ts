@@ -10,8 +10,6 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
-        // optional: strip prefix if your BE isn’t mounted at /api
-        // rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
