@@ -8,6 +8,8 @@ Libaries: compromise,
 
 Used APIs: Good Tape, icanhazdadjoke
 
+Live: https://dad-jokes-nkc2.vercel.app/
+
 App flow:
 
 - Record audio
